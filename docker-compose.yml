@@ -1,0 +1,37 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: asyncio_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: admin123
+      POSTGRES_DB: asyncio_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d asyncio_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build: .
+    container_name: asyncio_app
+    user: "1000:1000"
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "192.168.0.10:8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: python app.py
+
+volumes:
+  postgres_data:
